@@ -30,7 +30,7 @@ create_directory <- function(path) {
 }
 
 read_net_data <- function() {
-    base_path <- paste0(getwd(), "/data/")
+    base_path <- paste0(getwd(), "/data/raw/")
     net_types <- setNames(lapply(paste0(base_path, net_files), read.csv), net_names)
     return(net_types)
 }

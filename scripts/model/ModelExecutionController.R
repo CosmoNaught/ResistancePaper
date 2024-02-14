@@ -2,10 +2,8 @@
 # Model Execution Functions
 run_model_for_country <- function(iso, folder_base, net_data, mode_settings) {
     site_data <- foresite:::get_site(iso)
-    select_years <- max(site_data$interventions$year)
-    
-    site_data <- filter_and_update_interventions(site_data, net_data, select_years)
-    site_data <- expand_interventions(site_data, mode_settings$expand_year, mode_settings$delay, mode_settings$counterfactual)
+
+    site_data <- update_interventions(site_data, mode_settings$expand_year, mode_settings$delay, mode_settings$counterfactual)
 
     output <- prep_inputs(site_data)
     

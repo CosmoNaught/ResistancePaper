@@ -16,6 +16,7 @@ source("scripts/model/InterventionProcessing.R")
 source("scripts/model/InterventionExpansion.R")
 source("scripts/model/UtilityFunctions.R")
 source("scripts/model/ModelExecutionController.R")
+source("scripts/model/SitefilePrep.R")
 
 # Configuration and Constants
 debug <- TRUE
@@ -35,6 +36,8 @@ iso_codes <- c("NER") # Add additional ISO codes as required
 net_files <- c("pyrethroid_only_nets.csv", "pyrethroid_pyrrole_nets.csv", "pyrethroid_pbo_nets.csv")
 net_names <- c("PyNets", "PyPyroNets", "PyPBONets")
 folder_base <- paste0(getwd(), "/outputs/raw/sim/", output_dir, "/", mode, "/")
+
+
 
 # Script Execution
 initialize_environment()
