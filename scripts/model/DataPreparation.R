@@ -44,7 +44,6 @@ prep_single_site_data <- function(site_data, site_index) {
 
 prep_all_site_data <- function(site_data) {
   jobs <- nrow(site_data$sites)
-
   # Filter for rural sites
   rural_sites <- site_data$sites[site_data$sites$urban_rural == "rural", ]
   message(paste0("Prepping ", nrow(rural_sites), " jobs for model launch"))

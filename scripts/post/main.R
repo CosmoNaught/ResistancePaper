@@ -6,12 +6,12 @@
   source("scripts/utils/global.R")
 
   # Configuration and Constants
-  debug <- TRUE
+  debug <- FALSE
   iso <- "NER"
   environment_label <- ifelse(debug, "debug", "final")
-  measure_type <- "incidence"  # Set to "incidence" or "prevalence"
-  mode <- "counterfactual"     # Set to "current", "delay", or "counterfactual"
-  model_types <- c("PyNets", "PyPyroNets", "PyPBONets")
+  measure_type <- "prevalence"  # Set to "incidence" or "prevalence"
+  mode <- "current"     # Set to "current", "delay", or "counterfactual"
+  model_types <- c("PyNets")#, "PyPyroNets", "PyPBONets")
 
   # Apply mode-specific settings
   mode_settings <- get_mode_settings(mode)

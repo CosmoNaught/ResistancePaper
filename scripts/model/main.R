@@ -9,17 +9,22 @@ library(remotes)
 library(drat)
 library(furrr)
 
+
+combined_nets <- read.csv("D:/Malaria/ResistancePaper/data/post/combined_nets.csv") %>%
+  select(dn0_med, rn0_med, gamman_med, resistance, NetType)
+
+ssa_region <- read.csv("D:/Malaria/ResistancePaper/data/post/SSA_region.csv")
+
 source("scripts/utils/global.R")
 source("scripts/model/DataPreparation.R")
 source("scripts/model/ModelExecution.R")
-source("scripts/model/InterventionProcessing.R")
 source("scripts/model/InterventionExpansion.R")
 source("scripts/model/UtilityFunctions.R")
 source("scripts/model/ModelExecutionController.R")
 source("scripts/model/SitefilePrep.R")
 
 # Configuration and Constants
-debug <- TRUE
+debug <- FALSE
 parallel <- TRUE
 mode <- "counterfactual" # Set mode to "current", "delay", or "counterfactual"
 
@@ -34,10 +39,8 @@ iso_codes <- c("NER") # Add additional ISO codes as required
 
 # File and Folder Paths
 net_files <- c("pyrethroid_only_nets.csv", "pyrethroid_pyrrole_nets.csv", "pyrethroid_pbo_nets.csv")
-net_names <- c("PyNets", "PyPyroNets", "PyPBONets")
+net_names <- c("PyNets")#, "PyPyroNets", "PyPBONets")
 folder_base <- paste0(getwd(), "/outputs/raw/sim/", output_dir, "/", mode, "/")
-
-
 
 # Script Execution
 initialize_environment()
