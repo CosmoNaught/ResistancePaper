@@ -3,7 +3,7 @@
 run_model_for_country <- function(iso, folder_base, net_data, mode_settings) {
     site_data <- foresite:::get_site(iso)
     
-    site_data <- update_interventions(site_data, combined_nets, ssa_region, mode_settings$counterfactual)
+    site_data <- update_interventions(site_data, combined_nets, ssa_region, output_dir, mode_settings$counterfactual)
     
     output <- prep_inputs(site_data)
     

@@ -24,7 +24,7 @@ source("scripts/model/ModelExecutionController.R")
 source("scripts/model/SitefilePrep.R")
 
 # Configuration and Constants
-debug <- FALSE
+debug <- TRUE
 parallel <- TRUE
 mode <- "counterfactual" # Set mode to "current", "delay", or "counterfactual"
 

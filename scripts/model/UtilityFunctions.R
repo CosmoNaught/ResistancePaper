@@ -1,10 +1,10 @@
 
-save_interventions_data <- function(site_data) {
+save_interventions_data <- function(site_data, output_dir, mode) {
   # Extract ISO code from site_data
   iso_code <- site_data$sites$iso3c[1]
 
   # Construct the path for saving the RDS file in the sitefile directory
-  raw_sitefile_folder_path <- paste0("outputs/raw/sitefile/", iso_code, "/")
+  raw_sitefile_folder_path <- paste0("outputs/raw/sitefile/", output_dir, mode,"/",iso_code, "/")
   create_directory(raw_sitefile_folder_path)
 
   # File name for the RDS file
