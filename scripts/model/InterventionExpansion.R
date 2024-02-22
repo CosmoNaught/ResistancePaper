@@ -18,7 +18,7 @@ update_interventions <- function(site_data, combined_nets, ssa_region, output_di
 
     # Save interventions data
   save_interventions_data(site_data, output_dir, mode_settings$mode)
-  browser()
+
   return(site_data)
 
 }

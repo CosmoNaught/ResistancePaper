@@ -29,7 +29,15 @@ prep_single_site_data <- function(site_data, site_index) {
     vectors = site$vectors,
     seasonality = site$seasonality,
     eir = site$eir$eir[1],
-    overrides = list(human_population = human_population)
+    overrides = list(human_population = 10000,
+    prevalence_rendering_min_ages = c(0, 5,  0, 0.5, 0.5, 2) * 365, ## Prev in 6 months to 14 years measured
+    prevalence_rendering_max_ages = c(5,15,100, 14, 10, 10) * 365, 
+    clinical_incidence_rendering_min_ages = c(0, 5,  0, 0.5, 0.5, 2) * 365, ## All age clin_inc
+    clinical_incidence_rendering_max_ages = c(5,15,100, 14, 10, 10) * 365,
+    incidence_rendering_min_ages = c(0, 5,  0, 0.5, 0.5, 2) * 365, ## All age clin_inc
+    incidence_rendering_max_ages = c(5,15,100, 14, 10, 10) * 365,
+    severe_incidence_rendering_min_ages = c(0, 5,  0, 0.5, 0.5, 2) * 365,
+    severe_incidence_rendering_max_ages = c(5,15,100, 14, 10, 10) * 365)
   )
 
   inputs <- list(

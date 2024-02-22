@@ -9,7 +9,6 @@ library(remotes)
 library(drat)
 library(furrr)
 
-
 combined_nets <- read.csv("D:/Malaria/ResistancePaper/data/post/combined_nets.csv") %>%
   select(dn0_med, rn0_med, gamman_med, resistance, NetType)
 
@@ -35,11 +34,11 @@ mode_settings <- get_mode_settings(mode)
 workers <- if(parallel) 22 else 1
 output_dir <- ifelse(debug, "debug", "final")
 human_population <- if(debug) 1500 else 150000
-iso_codes <- c("NER") # Add additional ISO codes as required
+iso_codes <- c("MLI") # Add additional ISO codes as required
 
 # File and Folder Paths
 net_files <- c("pyrethroid_only_nets.csv", "pyrethroid_pyrrole_nets.csv", "pyrethroid_pbo_nets.csv")
-net_names <- c("PyNets")#, "PyPyroNets", "PyPBONets")
+net_names <- c("PyNets")
 folder_base <- paste0(getwd(), "/outputs/raw/sim/", output_dir, "/", mode, "/")
 
 # Script Execution
