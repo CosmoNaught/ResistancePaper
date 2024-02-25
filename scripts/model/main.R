@@ -16,17 +16,22 @@ library(readr)
 combined_nets <- read.csv("D:/Malaria/ResistancePaper/data/post/combined_nets.csv") %>%
   select(dn0_med, rn0_med, gamman_med, resistance, NetType)
 
-ssa_region <- read.csv("D:/Malaria/ResistancePaper/data/post/SSA_region_combined.csv")
-
-# Mode Settings Function
+# Adjusted Mode Settings Function
 get_mode_settings <- function(mode) {
-  switch(mode,
-    "observed" = list(counterfactual = FALSE),
-    "PyOnly" = list(counterfactual = FALSE),
-    "PyPBO" = list(counterfactual = FALSE),
-    "counterfactual" = list(counterfactual = TRUE),
-    stop("Invalid mode specified")
+  settings <- list(
+    "observed" = list(counterfactual = FALSE, ssa_region_file = "SSA_region_combined.csv"),
+    "PyOnly" = list(counterfactual = FALSE, ssa_region_file = "SSA_region_PyNets.csv"),
+    "PyPBO" = list(counterfactual = FALSE, ssa_region_file = "SSA_region_Py_PBONets.csv"),
+    "counterfactual" = list(counterfactual = TRUE, ssa_region_file = "SSA_region_combined.csv")
   )
+  if (!mode %in% names(settings)) stop("Invalid mode specified")
+  return(settings[[mode]])
+}
+
+# Load SSA Region based on Mode
+load_ssa_region <- function(ssa_region_file) {
+  path <- paste0("D:/Malaria/ResistancePaper/data/post/", ssa_region_file)
+  read.csv(path)
 }
 
 # Function to prepare input data for a single site
@@ -212,12 +217,12 @@ counterfactual_replacement <- function(interventions, counterfactual) {
 }
 
 # Main Function
-update_interventions <- function(site_data, combined_nets, ssa_region, output_dir, counterfactual) {
+update_interventions <- function(site_data, combined_nets, ssa_region, output_dir, counterfactual, mode) {
   site_data <- SiteFilePrep(site_data, combined_nets, ssa_region)
   site_data$interventions <- counterfactual_replacement(site_data$interventions, mode_settings$counterfactual)
 
     # Save interventions data
-  save_interventions_data(site_data, output_dir, mode_settings$mode)
+  save_interventions_data(site_data, output_dir, mode)
 
   return(site_data)
 
@@ -229,7 +234,7 @@ save_interventions_data <- function(site_data, output_dir, mode) {
   iso_code <- site_data$sites$iso3c[1]
 
   # Construct the path for saving the RDS file in the sitefile directory
-  raw_sitefile_folder_path <- paste0("outputs/raw/sitefile/", output_dir, mode,"/",iso_code, "/")
+  raw_sitefile_folder_path <- paste0("outputs/raw/sitefile/", output_dir, "/", mode,"/",iso_code, "/")
   create_directory(raw_sitefile_folder_path)
 
   # File name for the RDS file
@@ -254,18 +259,12 @@ create_directory <- function(path) {
     }
 }
 
-read_net_data <- function() {
-    base_path <- paste0(getwd(), "/data/raw/")
-    net_types <- setNames(lapply(paste0(base_path, net_files), read.csv), net_names)
-    return(net_types)
-}
-
 
 # Model Execution Functions
 run_model_for_country <- function(iso, folder_base, net_data, mode_settings) {
     site_data <- foresite:::get_site(iso)
     
-    site_data <- update_interventions(site_data, combined_nets, ssa_region, output_dir, mode_settings$counterfactual)
+    site_data <- update_interventions(site_data, combined_nets, ssa_region, output_dir, mode_settings$counterfactual, mode)
     
     output <- prep_inputs(site_data)
     
@@ -280,51 +279,48 @@ run_model_for_country <- function(iso, folder_base, net_data, mode_settings) {
 
 # Main Execution Logic
 execute_models <- function() {
-    net_types <- read_net_data()
+    # Load the SSA region based on the current mode
+    mode_settings <- get_mode_settings(mode)
+    ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
 
-    # Adjust net types based on the mode
-    net_names_to_use <- if (mode_settings$counterfactual) {
-        # Use only PyNets for counterfactual and don't create a sub-folder for net types
-        names(net_types)[names(net_types) == "PyNets"]
-    } else {
-        # Use all net types otherwise and create sub-folders for each
-        names(net_types)
-    }
-
-    invisible(lapply(net_names_to_use, function(net_name) {
-        net_data <- net_types[[net_name]]
-
-        # Adjust folder structure based on counterfactual setting
-        folder_net_type <- if (mode_settings$counterfactual) folder_base else paste0(folder_base, net_name, "/")
-        create_directory(folder_net_type)
-
-        invisible(lapply(iso_codes, function(iso) {
-            folder_iso <- paste0(folder_net_type, iso, "/")
-            create_directory(folder_iso)
-
-            run_model_for_country(iso, folder_iso, net_data, mode_settings)
-        }))
+    # Define the base path for simulation output
+    sim_base_path <- paste0(getwd(), "/outputs/raw/sim/", output_dir, "/", mode, "/")
+    # # Define the base path for non-simulation (site data) output
+    # site_base_path <- paste0(getwd(), "/outputs/raw/sitefile/", output_dir, "/", mode, "/")
+    
+    # Ensure base directories exist
+    create_directory(sim_base_path)
+    # create_directory(site_base_path)
+    
+    # Iterate over ISO codes to run the model for each country
+    invisible(lapply(iso_codes, function(iso) {
+        # Define the ISO-specific directory paths for simulation and site data
+        sim_iso_path <- paste0(sim_base_path, iso, "/")
+        # site_iso_path <- paste0(site_base_path, iso, "/")
+        
+        # Ensure ISO-specific directories exist
+        create_directory(sim_iso_path)
+        # create_directory(site_iso_path)
+        
+        # Here we assume run_model_for_country can handle both simulation and site data outputs
+        # Adjust the function call if necessary
+        run_model_for_country(iso, sim_iso_path, ssa_region, mode_settings)
     }))
 }
 
-# Configuration and Constants
+
+# Configuration and Constants - Adjusted
 debug <- TRUE
 parallel <- TRUE
-mode <- "counterfactual" # Set mode to "observed", "delay", or "counterfactual"
-
-# Apply mode-specific settings
+mode <- "PyPBO" # Adjust as needed
 mode_settings <- get_mode_settings(mode)
+ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
 
-# Parallel and Debug Settings
+# Adjust workers, output directory, and human population based on mode or debug flag
 workers <- if(parallel) 22 else 1
-output_dir <- ifelse(debug, "debug", "final")
+output_dir <- if(debug) "debug" else "final"
 human_population <- if(debug) 1500 else 150000
-iso_codes <- c("MLI") # Add additional ISO codes as required
-
-# File and Folder Paths
-net_files <- c("pyrethroid_only_nets.csv", "pyrethroid_pyrrole_nets.csv", "pyrethroid_pbo_nets.csv")
-net_names <- c("PyNets")
-folder_base <- paste0(getwd(), "/outputs/raw/sim/", output_dir, "/", mode, "/")
+iso_codes <- c("MLI")
 
 # Script Execution
 initialize_environment()
