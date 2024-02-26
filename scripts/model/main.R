@@ -8,9 +8,6 @@ library(purrr)
 library(remotes)
 library(drat)
 library(furrr)
-library(dplyr)
-library(readr)
-library(foresite) # Assuming foresite is a package you have access to
 library(readr)
 
 combined_nets <- read.csv("D:/Malaria/ResistancePaper/data/post/combined_nets.csv") %>%
@@ -65,15 +62,16 @@ prep_single_site_data <- function(site_data, site_index) {
     vectors = site$vectors,
     seasonality = site$seasonality,
     eir = site$eir$eir[1],
-    overrides = list(human_population = 10000,
-    prevalence_rendering_min_ages = c(0, 5,  0,  2) * 365, ## Prev in 6 months to 14 years measured
-    prevalence_rendering_max_ages = c(5,15,100, 10) * 365, 
-    clinical_incidence_rendering_min_ages = c(0, 5, 0,  2) * 365, ## All age clin_inc
-    clinical_incidence_rendering_max_ages = c(5,15,100, 10) * 365,
-    incidence_rendering_min_ages = c(0, 5,  0,  2) * 365, ## All age clin_inc
-    incidence_rendering_max_ages = c(5,15,100, 10) * 365,
-    severe_incidence_rendering_min_ages = c(0, 5,  0,  2) * 365,
-    severe_incidence_rendering_max_ages = c(5,15,100, 10) * 365)
+    overrides = list(human_population = human_population#150000#, #TODO DEBUG POP NOT PASSING THROUGH...
+    # prevalence_rendering_min_ages = c(0, 5,  0,  2) * 365, ## Prev in 6 months to 14 years measured
+    # prevalence_rendering_max_ages = c(5,15,100, 10) * 365, 
+    # clinical_incidence_rendering_min_ages = c(0, 5, 0,  2) * 365, ## All age clin_inc
+    # clinical_incidence_rendering_max_ages = c(5,15,100, 10) * 365,
+    # incidence_rendering_min_ages = c(0, 5,  0,  2) * 365, ## All age clin_inc
+    # incidence_rendering_max_ages = c(5,15,100, 10) * 365,
+    # severe_incidence_rendering_min_ages = c(0, 5,  0,  2) * 365,
+    # severe_incidence_rendering_max_ages = c(5,15,100, 10) * 365
+    )
   )
 
   inputs <- list(
@@ -180,7 +178,7 @@ SiteFilePrep <- function(site_data, combined_nets, ssa_region) {
                             
                             if(nrow(combined_factors) > 0) {
                                 ssa_net_factor <- ssa_fact_year[[net_type]]
-                                
+
                                 # Update values while ensuring data types remain unchanged
                                 site_data$interventions$dn0[idx] <- as(
                                     site_data$interventions$dn0[idx] +
@@ -240,7 +238,6 @@ save_interventions_data <- function(site_data, output_dir, mode) {
   # File name for the RDS file
   rds_file_name <- paste0(raw_sitefile_folder_path, "site_data_interventions_", iso_code, ".RDS")
 
-  # Save the RDS file
   saveRDS(site_data$interventions, file = rds_file_name)
   message("Interventions data saved: ", rds_file_name)
 }
@@ -258,7 +255,6 @@ create_directory <- function(path) {
         dir.create(path, recursive = TRUE)
     }
 }
-
 
 # Model Execution Functions
 run_model_for_country <- function(iso, folder_base, net_data, mode_settings) {
@@ -278,49 +274,62 @@ run_model_for_country <- function(iso, folder_base, net_data, mode_settings) {
 }
 
 # Main Execution Logic
-execute_models <- function() {
-    # Load the SSA region based on the current mode
+execute_models <- function() {  # Add mode as a parameter
     mode_settings <- get_mode_settings(mode)
     ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
 
-    # Define the base path for simulation output
     sim_base_path <- paste0(getwd(), "/outputs/raw/sim/", output_dir, "/", mode, "/")
-    # # Define the base path for non-simulation (site data) output
-    # site_base_path <- paste0(getwd(), "/outputs/raw/sitefile/", output_dir, "/", mode, "/")
-    
-    # Ensure base directories exist
     create_directory(sim_base_path)
-    # create_directory(site_base_path)
-    
-    # Iterate over ISO codes to run the model for each country
     invisible(lapply(iso_codes, function(iso) {
-        # Define the ISO-specific directory paths for simulation and site data
         sim_iso_path <- paste0(sim_base_path, iso, "/")
-        # site_iso_path <- paste0(site_base_path, iso, "/")
-        
-        # Ensure ISO-specific directories exist
         create_directory(sim_iso_path)
-        # create_directory(site_iso_path)
-        
-        # Here we assume run_model_for_country can handle both simulation and site data outputs
-        # Adjust the function call if necessary
         run_model_for_country(iso, sim_iso_path, ssa_region, mode_settings)
     }))
 }
 
-
 # Configuration and Constants - Adjusted
 debug <- TRUE
 parallel <- TRUE
-mode <- "PyPBO" # Adjust as needed
-mode_settings <- get_mode_settings(mode)
-ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
 
 # Adjust workers, output directory, and human population based on mode or debug flag
 workers <- if(parallel) 22 else 1
 output_dir <- if(debug) "debug" else "final"
 human_population <- if(debug) 1500 else 150000
 iso_codes <- c("MLI")
+
+mode <- "observed"
+mode_settings <- get_mode_settings(mode)
+ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
+
+# Script Execution
+initialize_environment()
+execute_models()
+
+rm(mode, mode_settings, ssa_region)
+
+mode <- "PyOnly"
+mode_settings <- get_mode_settings(mode)
+ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
+
+# Script Execution
+initialize_environment()
+execute_models()
+
+rm(mode, mode_settings, ssa_region)
+
+mode <- "PyPBO"
+mode_settings <- get_mode_settings(mode)
+ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
+
+# Script Execution
+initialize_environment()
+execute_models()
+
+rm(mode, mode_settings, ssa_region)
+
+mode <- "counterfactual"
+mode_settings <- get_mode_settings(mode)
+ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
 
 # Script Execution
 initialize_environment()
