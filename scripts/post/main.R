@@ -7,8 +7,8 @@ library(purrr)
 debug <- TRUE # Toggle based on requirement
 environment_label <- ifelse(debug, "debug", "final")
 measure_type <- "prevalence"  # Can be set to "incidence" or "prevalence"
-# modes <- c("observed", "PyOnly", "PyPBO", "counterfactual")
-modes <- c("observed", "debug", "counterfactual")
+modes <- c("observed", "PyOnly", "PyPBO", "counterfactual")
+
 
 isos <- c("MLI")  # List of ISO codes to iterate over
 

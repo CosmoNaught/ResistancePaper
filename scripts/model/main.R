@@ -10,8 +10,8 @@ library(drat)
 library(furrr)
 library(readr)
 
-combined_nets <- read.csv("D:/Malaria/ResistancePaper/data/post/combined_nets.csv") %>%
-  select(dn0_med, rn0_med, gamman_med, resistance, NetType)
+combined_nets <- read_csv(paste0(getwd(),"/data/post/combined_nets.csv"))
+combined_nets <- select(combined_nets, "dn0_med", "rn0_med", "gamman_med", "resistance", "NetType")
 
 # Adjusted Mode Settings Function
 get_mode_settings <- function(mode) {
@@ -148,57 +148,57 @@ run_malaria_model <- function(output, folder) {
 }
 
 SiteFilePrep <- function(site_data, combined_nets, ssa_region) {
+  # Min year in SSA
+  min_year <- min(ssa_region$year, na.rm = TRUE)
+  
+  # Max year in site file
+  max_year <- max(site_data$interventions$year, na.rm = TRUE)
+  
+  for (year_edit in min_year:max_year) {
+    # Filter SSA data for the current year and country
     ssa_fact <- ssa_region %>%
-      filter(ISO3C == site_data$country)
+      filter(ISO3C == site_data$country, year == year_edit)
     
-    if (!is.null(site_data$interventions)) {
-        min_year <- min(ssa_fact$year, na.rm = TRUE)
-        max_year <- max(site_data$interventions$year, na.rm = TRUE)
+    # Filter site data for the current year and rural areas
+    row_edit <- site_data$interventions %>%
+      filter(year == year_edit, urban_rural == "rural") %>%
+      select(urban_rural, year, dn0, rn0, gamman, pyrethroid_resistance)
+    
+    if (nrow(row_edit) > 0) {
+      row_edit <- row_edit %>%
+        rowwise() %>%
+        mutate(
+          dn0 = sum(
+            (combined_nets %>% filter(resistance == pyrethroid_resistance, NetType == "PyNets"))$dn0_med * ssa_fact$PyNets,
+            (combined_nets %>% filter(resistance == pyrethroid_resistance, NetType == "PyPBONets"))$dn0_med * ssa_fact$PyPBONets,
+            (combined_nets %>% filter(resistance == pyrethroid_resistance, NetType == "PyPyroNets"))$dn0_med * ssa_fact$PyPyroNets
+          ),
+          rn0 = sum(
+            (combined_nets %>% filter(resistance == pyrethroid_resistance, NetType == "PyNets"))$rn0_med * ssa_fact$PyNets,
+            (combined_nets %>% filter(resistance == pyrethroid_resistance, NetType == "PyPBONets"))$rn0_med * ssa_fact$PyPBONets,
+            (combined_nets %>% filter(resistance == pyrethroid_resistance, NetType == "PyPyroNets"))$rn0_med * ssa_fact$PyPyroNets
+          ),
+          gamman = sum(
+            (combined_nets %>% filter(resistance == pyrethroid_resistance, NetType == "PyNets"))$gamman_med * ssa_fact$PyNets,
+            (combined_nets %>% filter(resistance == pyrethroid_resistance, NetType == "PyPBONets"))$gamman_med * ssa_fact$PyPBONets,
+            (combined_nets %>% filter(resistance == pyrethroid_resistance, NetType == "PyPyroNets"))$gamman_med * ssa_fact$PyPyroNets
+          )
+        ) %>%
+        ungroup()
       
-        # Use lapply instead of for loop for years
-        lapply(min_year:max_year, function(year_edit) {
-            ssa_fact_year <- filter(ssa_fact, year == year_edit)
-            
-            if(nrow(ssa_fact_year) > 0) {
-                interventions_res <- site_data$interventions %>%
-                    filter(year == year_edit)
-                
-                if(nrow(interventions_res) > 0) {
-                    row_indices <- which(site_data$interventions$year == year_edit)
-                    
-                    lapply(row_indices, function(idx) {
-                        # Capture original data types
-                        original_dn0_type <- typeof(site_data$interventions$dn0[idx])
-                        original_rn0_type <- typeof(site_data$interventions$rn0[idx])
-                        original_gamman_type <- typeof(site_data$interventions$gamman[idx])
-                        
-                        lapply(c("PyNets", "PyPBONets", "PyPyroNets"), function(net_type) {
-                            combined_factors <- combined_nets %>%
-                                filter(resistance == site_data$interventions$pyrethroid_resistance[idx], NetType == net_type)
-                            
-                            if(nrow(combined_factors) > 0) {
-                                ssa_net_factor <- ssa_fact_year[[net_type]]
-
-                                # Update values while ensuring data types remain unchanged
-                                site_data$interventions$dn0[idx] <- as(
-                                    site_data$interventions$dn0[idx] +
-                                    combined_factors$dn0_med * ssa_net_factor, original_dn0_type)
-                                
-                                site_data$interventions$rn0[idx] <- as(
-                                    site_data$interventions$rn0[idx] +
-                                    combined_factors$rn0_med * ssa_net_factor, original_rn0_type)
-                                
-                                site_data$interventions$gamman[idx] <- as(
-                                    site_data$interventions$gamman[idx] +
-                                    combined_factors$gamman_med * ssa_net_factor, original_gamman_type)
-                            }
-                        })
-                    })
-                }
-            }
-        })
+      # Update the original site_data with the modified values
+      for (i in 1:nrow(row_edit)) {
+        site_data$interventions <- site_data$interventions %>%
+          mutate(
+            dn0 = ifelse(year == year_edit & urban_rural == "rural", row_edit$dn0[i], dn0),
+            rn0 = ifelse(year == year_edit & urban_rural == "rural", row_edit$rn0[i], rn0),
+            gamman = ifelse(year == year_edit & urban_rural == "rural", row_edit$gamman[i], gamman)
+          )
+      }
     }
-    return(site_data)
+  }
+  
+  return(site_data)
 }
 
 counterfactual_replacement <- function(interventions, counterfactual) {
@@ -294,7 +294,7 @@ parallel <- TRUE
 # Adjust workers, output directory, and human population based on mode or debug flag
 workers <- if(parallel) 22 else 1
 output_dir <- if(debug) "debug" else "final"
-human_population <- if(debug) 1500 else 150000
+human_population <- if(debug) 15000 else 150000
 iso_codes <- c("MLI")
 
 mode <- "observed"

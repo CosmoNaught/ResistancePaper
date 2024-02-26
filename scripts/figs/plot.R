@@ -9,8 +9,7 @@ isos <- c("MLI") # List of ISO codes for which to generate plots
 environment_label <- ifelse(debug, "debug", "final")
 measure_type <- "prevalence"
 plot_base_dir <- paste0(getwd(), "/outputs/figs/") # Adjust your base directory accordingly
-# modes <- c("observed", "PyOnly", "PyPBO", "counterfactual")
-modes <- c("observed", "debug", "counterfactual")
+modes <- c("observed", "PyOnly", "PyPBO", "counterfactual")
 
 
 # Ensure the base plot directory exists
