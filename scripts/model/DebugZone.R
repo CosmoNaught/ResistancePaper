@@ -79,3 +79,26 @@ tst1 <- readRDS("D:\\Malaria\\ResistancePaper\\outputs\\raw\\sitefile\\debug\\ob
 tst2 <- readRDS("D:\\Malaria\\ResistancePaper\\outputs\\raw\\sitefile\\debug\\PyOnly\\MLI\\site_data_interventions_MLI.RDS")
 
 tst1$rn0 - tst2$rn0
+
+# Function to check and print ISO codes with non-zero sum of rtss_cov
+check_non_zero_rtss_cov <- function(iso_codes) {
+  non_zero_iso_codes <- c() # Initialize an empty vector to store ISO codes with non-zero sums
+  
+  for (iso in iso_codes) {
+    sum_rtss_cov <- sum(foresite::get_site(iso)$interventions$rtss_cov)
+    
+    if (sum_rtss_cov > 0) {
+      non_zero_iso_codes <- c(non_zero_iso_codes, iso) # Add ISO code to the list
+    }
+  }
+  
+  # Print ISO codes with non-zero sum of rtss_cov
+  if (length(non_zero_iso_codes) > 0) {
+    cat("ISO codes with non-zero sum of rtss_cov:", paste(non_zero_iso_codes, collapse = ", "), "\n")
+  } else {
+    cat("No ISO codes with non-zero sum of rtss_cov found.\n")
+  }
+}
+
+# Execute the function with the provided ISO codes
+check_non_zero_rtss_cov(iso_codes)

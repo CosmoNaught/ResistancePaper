@@ -19,6 +19,7 @@ get_mode_settings <- function(mode) {
     "observed" = list(counterfactual = FALSE, ssa_region_file = "SSA_region_combined.csv"),
     "PyOnly" = list(counterfactual = FALSE, ssa_region_file = "SSA_region_PyNets.csv"),
     "PyPBO" = list(counterfactual = FALSE, ssa_region_file = "SSA_region_Py_PBONets.csv"),
+    "IG2Only" = list(counterfactual = FALSE, ssa_region_file = "SSA_region_IG2.csv"),
     "counterfactual" = list(counterfactual = TRUE, ssa_region_file = "SSA_region_combined.csv")
   )
   if (!mode %in% names(settings)) stop("Invalid mode specified")
@@ -62,15 +63,15 @@ prep_single_site_data <- function(site_data, site_index) {
     vectors = site$vectors,
     seasonality = site$seasonality,
     eir = site$eir$eir[1],
-    overrides = list(human_population = human_population#150000#, #TODO DEBUG POP NOT PASSING THROUGH...
-    # prevalence_rendering_min_ages = c(0, 5,  0,  2) * 365, ## Prev in 6 months to 14 years measured
-    # prevalence_rendering_max_ages = c(5,15,100, 10) * 365, 
-    # clinical_incidence_rendering_min_ages = c(0, 5, 0,  2) * 365, ## All age clin_inc
-    # clinical_incidence_rendering_max_ages = c(5,15,100, 10) * 365,
-    # incidence_rendering_min_ages = c(0, 5,  0,  2) * 365, ## All age clin_inc
-    # incidence_rendering_max_ages = c(5,15,100, 10) * 365,
-    # severe_incidence_rendering_min_ages = c(0, 5,  0,  2) * 365,
-    # severe_incidence_rendering_max_ages = c(5,15,100, 10) * 365
+    overrides = list(human_population = human_population,
+    prevalence_rendering_min_ages = c(0,  0,  2) * 365,
+    prevalence_rendering_max_ages = c(5, 100, 10) * 365,
+    clinical_incidence_rendering_min_ages = c(0, 0) * 365,
+    clinical_incidence_rendering_max_ages = c(5, 100) * 365,
+    incidence_rendering_min_ages = c(0,  0) * 365,
+    incidence_rendering_max_ages = c(5, 100) * 365,
+    severe_incidence_rendering_min_ages = c(0,  0) * 365,
+    severe_incidence_rendering_max_ages = c(5, 100) * 365
     )
   )
 
@@ -219,6 +220,9 @@ update_interventions <- function(site_data, combined_nets, ssa_region, output_di
   site_data <- SiteFilePrep(site_data, combined_nets, ssa_region)
   site_data$interventions <- counterfactual_replacement(site_data$interventions, mode_settings$counterfactual)
 
+  ## Malawi has non-zero values in rtss_cov which leads to the model not running
+  site_data$interventions$rtss_cov <- 0 # Zero out all values in rtss_cov
+
     # Save interventions data
   save_interventions_data(site_data, output_dir, mode)
 
@@ -288,49 +292,27 @@ execute_models <- function() {  # Add mode as a parameter
 }
 
 # Configuration and Constants - Adjusted
-debug <- TRUE
+debug <- FALSE
 parallel <- TRUE
 
 # Adjust workers, output directory, and human population based on mode or debug flag
 workers <- if(parallel) 22 else 1
 output_dir <- if(debug) "debug" else "final"
-human_population <- if(debug) 15000 else 150000
-iso_codes <- c("MLI")
+human_population <- if(debug) 10000 else 100000
 
-mode <- "observed"
-mode_settings <- get_mode_settings(mode)
-ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
+iso_codes <- "MWI" #unique(read.csv("D:/Malaria/ResistancePaper/data/post/SSA_region_combined.csv")$ISO3C)
+modes <- c("observed", "PyOnly", "PyPBO", "IG2Only", "counterfactual")
 
-# Script Execution
 initialize_environment()
-execute_models()
 
-rm(mode, mode_settings, ssa_region)
+for(mode in modes) {
+    cat("Executing mode:", mode, "\n")
+    
+    # Get mode settings and SSA region data
+    mode_settings <- get_mode_settings(mode)
+    ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
+    
+    execute_models()  # Assumes this function now internally uses the 'mode' variable correctly
+    rm(mode, mode_settings, ssa_region)
 
-mode <- "PyOnly"
-mode_settings <- get_mode_settings(mode)
-ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
-
-# Script Execution
-initialize_environment()
-execute_models()
-
-rm(mode, mode_settings, ssa_region)
-
-mode <- "PyPBO"
-mode_settings <- get_mode_settings(mode)
-ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
-
-# Script Execution
-initialize_environment()
-execute_models()
-
-rm(mode, mode_settings, ssa_region)
-
-mode <- "counterfactual"
-mode_settings <- get_mode_settings(mode)
-ssa_region <- load_ssa_region(mode_settings$ssa_region_file)
-
-# Script Execution
-initialize_environment()
-execute_models()
+}
