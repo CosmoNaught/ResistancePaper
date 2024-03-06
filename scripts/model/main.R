@@ -300,7 +300,7 @@ workers <- if(parallel) 22 else 1
 output_dir <- if(debug) "debug" else "final"
 human_population <- if(debug) 10000 else 100000
 
-iso_codes <- "MWI" #unique(read.csv("D:/Malaria/ResistancePaper/data/post/SSA_region_combined.csv")$ISO3C)
+iso_codes <- nique(read.csv("D:/Malaria/ResistancePaper/data/post/SSA_region_combined.csv")$ISO3C)
 modes <- c("observed", "PyOnly", "PyPBO", "IG2Only", "counterfactual")
 
 initialize_environment()
