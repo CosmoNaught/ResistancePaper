@@ -3,13 +3,19 @@ library(dplyr)
 library(tidyr)
 library(purrr)
 
+source(paste0(getwd(), "/scripts/utils/utils.R"))
+
 # Updated Configuration and Constants
 debug <- FALSE # Toggle based on requirement
 environment_label <- ifelse(debug, "debug", "final")
 measure_type <- "prevalence"  # Can be set to "incidence" or "prevalence"
 modes <- c("observed", "PyOnly", "PyPBO", "IG2Only", "counterfactual")
 
-isos <- c("MWI")  # List of ISO codes to iterate over
+iso_codes <- unique(read.csv("D:/Malaria/ResistancePaper/data/post/SSA_region_combined.csv")$ISO3C)
+check_iso_codes(iso_codes)
+iso_codes <- iso_codes[iso_codes != "CPV"]
+
+iso_codes <- iso_codes
 
 # Adjusted Directory Paths Function
 get_directory_paths <- function(environment_label, mode) {
@@ -77,7 +83,7 @@ process_and_combine_data_for_mode_and_iso <- function(mode, iso, measure_type) {
 }
 
 # Execution for Each Mode and ISO
-for (iso in isos) {
+for (iso in iso_codes) {
   for (mode in modes) {
     process_and_combine_data_for_mode_and_iso(mode, iso, measure_type)
   }
