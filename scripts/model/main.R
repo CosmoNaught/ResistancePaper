@@ -10,6 +10,8 @@ library(drat)
 library(furrr)
 library(readr)
 
+source(paste0(getwd(), "/scripts/utils/utils.R"))
+
 combined_nets <- read_csv(paste0(getwd(),"/data/post/combined_nets.csv"))
 combined_nets <- select(combined_nets, "dn0_med", "rn0_med", "gamman_med", "resistance", "NetType")
 
@@ -300,7 +302,12 @@ workers <- if(parallel) 22 else 1
 output_dir <- if(debug) "debug" else "final"
 human_population <- if(debug) 10000 else 100000
 
-iso_codes <- nique(read.csv("D:/Malaria/ResistancePaper/data/post/SSA_region_combined.csv")$ISO3C)
+iso_codes <- unique(read.csv("D:/Malaria/ResistancePaper/data/post/SSA_region_combined.csv")$ISO3C)
+check_iso_codes(iso_codes)
+iso_codes <- iso_codes[iso_codes != "CPV"]
+
+iso_codes <- iso_codes
+
 modes <- c("observed", "PyOnly", "PyPBO", "IG2Only", "counterfactual")
 
 initialize_environment()

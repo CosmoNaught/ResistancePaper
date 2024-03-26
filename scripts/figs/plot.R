@@ -3,9 +3,18 @@ library(ggplot2)
 library(dplyr)
 library(viridis) # For viridis color palette
 
+source(paste0(getwd(), "/scripts/utils/utils.R"))
+
+
 # Configuration and Constants
 debug <- FALSE
-isos <- c("MWI") # List of ISO codes for which to generate plots
+
+iso_codes <- unique(read.csv("D:/Malaria/ResistancePaper/data/post/SSA_region_combined.csv")$ISO3C)
+check_iso_codes(iso_codes)
+iso_codes <- iso_codes[iso_codes != "CPV"]
+
+iso_codes <- iso_codes
+
 environment_label <- ifelse(debug, "debug", "final")
 measure_type <- "prevalence"
 plot_base_dir <- paste0(getwd(), "/outputs/figs/") # Adjust your base directory accordingly
@@ -43,7 +52,7 @@ create_and_save_plots <- function(iso, modes, environment_label, measure_type) {
 # Create the plot with legend label customizations
 plot <- ggplot(combined_data, aes(x = timestep, y = value, color = mode)) +
   geom_line(linewidth=0.5) + # Use linewidth for line thickness
-  labs(x = "Year", y = "Prevalence (%)", title = paste("Malaria Prevalence Comparison in Malawi (PrPf 2-10)"),
+  labs(x = "Year", y = "Prevalence (%)", title = paste("Malaria Prevalence Comparison in", iso, "(PrPf 2-10)"),
        subtitle = "Comparison across different modelling scenarios") +
   theme_minimal(base_size = 20) + # Increase base font size for other elements
   theme(panel.background = element_rect(fill = "white", colour = "white"),
@@ -60,8 +69,9 @@ plot <- ggplot(combined_data, aes(x = timestep, y = value, color = mode)) +
                       breaks = c("counterfactual", "observed", "PyOnly", "PyPBO", "IG2Only"),
                       labels = c("No ITN Resistance", "Observed ITN Distribution", "Pyrethroid ITN Distribution", "Pyrethroid & PBO ITN Distribution", "IG2 ITN Distribution")) + # Custom legend labels
   guides(color = guide_legend(title = "Scenario")) + # Rename legend title to 'Scenario'
-  scale_x_continuous(limits = c(2018, 2023), breaks = seq(2018, 2023, by = 1), expand = c(0, 0)) + # Set x-axis limits and ensure ticks for every year from 2000 to 2023, remove padding
-  scale_y_continuous(limits = c(0, 0.2), expand = c(0, 0)) # Set y-axis limits from 0 to 1, remove padding
+  # scale_x_continuous(limits = c(2018, 2023), breaks = seq(2018, 2023, by = 1), expand = c(0, 0)) + # Set x-axis limits and ensure ticks for every year from 2000 to 2023, remove padding
+  scale_x_continuous(expand = c(0, 0)) + # Set x-axis limits and ensure ticks for every year from 2000 to 2023, remove padding
+  scale_y_continuous(expand = c(0, 0)) # Set y-axis limits from 0 to 1, remove padding
 
 # Note: Custom legend labels are specified to match the provided descriptions
 
@@ -73,6 +83,6 @@ plot <- ggplot(combined_data, aes(x = timestep, y = value, color = mode)) +
 }
 
 # Generate and save plots for each ISO code
-for (iso in isos) {
+for (iso in iso_codes) {
   create_and_save_plots(iso, modes, environment_label, measure_type)
 }
